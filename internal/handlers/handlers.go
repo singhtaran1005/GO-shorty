@@ -10,6 +10,7 @@ import (
 	"github.com/asaskevich/govalidator"
 	"github.com/go-redis/redis"
 	"github.com/gofiber/fiber/v2"
+	"github.com/google/uuid"
 )
 
 func Ping(c *fiber.Ctx) error {
@@ -35,7 +36,7 @@ func ShortenURL(c *fiber.Ctx) error {
 		r2.Set(c.Context(), c.IP(), os.Getenv("API_QUOTA"), 30*60*time.Second).Err()
 	} else {
 		// user found with ip in redis
-		val, _ = r2.Get(c.Context(), c.IP()).Result() // get value of quota, how many api calls left
+		// val, _ = r2.Get(c.Context(), c.IP()).Result() // get value of quota, how many api calls left
 		valInt, _ := strconv.Atoi(val)
 		if valInt <= 0 {
 			limit, _ := r2.TTL(r2.Context(), c.IP()).Result()
@@ -58,9 +59,54 @@ func ShortenURL(c *fiber.Ctx) error {
 	// enforce http,SSL
 	body.URL = EnforceHttp(body.URL)
 
+	// implement custom shorten-url logic
+	var id string
+
+	if body.CustomShort == "" {
+		id = uuid.New().String()[:6]
+	} else {
+		id = body.CustomShort
+	}
+
+	r := database.CreateClient(0)
+	defer r.Close()
+
+	value, _ := r.Get(c.Context(), id).Result()
+	if value != "" {
+		// id found in database
+		return c.Status(fiber.StatusForbidden).JSON(fiber.Map{"error": "URL custom short is already in use"})
+	}
+
+	if body.Expiry == 0 {
+		body.Expiry = 24
+	}
+
+	err = r.Set(r.Context(), id, body.URL, body.Expiry*3600*time.Second).Err()
+	if err != nil {
+		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Unable to connect to server/database"})
+	}
+
+	response := &dto.Response{
+		URL:            body.URL,
+		CustomShort:    "",
+		Expiry:         body.Expiry,
+		RateRemaining:  10,
+		RateLimitReset: 30, // in 30 min 10 api calls are allowed
+	}
+
 	// decrement by 1 everytime function is called
 	r2.Decr(r2.Context(), c.IP())
-	return nil
+
+	// update
+	v, _ := r2.Get(c.Context(), c.IP()).Result()
+	response.RateRemaining, _ = strconv.Atoi(v)
+
+	ttl, _ := r2.TTL(c.Context(), c.IP()).Result()
+	response.RateLimitReset = ttl / time.Nanosecond / time.Minute
+
+	response.CustomShort = os.Getenv("DOMAIN") + "/" + id
+
+	return c.Status(fiber.StatusOK).JSON(response)
 }
 
 func ResolveURL(c *fiber.Ctx) error {
