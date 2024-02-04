@@ -12,7 +12,7 @@ import (
 
 func main() {
 
-	err := godotenv.Load()
+	err := godotenv.Load("config.env")
 	if err != nil {
 		fmt.Println(err)
 	}

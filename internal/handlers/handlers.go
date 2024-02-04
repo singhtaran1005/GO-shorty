@@ -30,13 +30,13 @@ func ShortenURL(c *fiber.Ctx) error {
 
 	r2 := database.CreateClient(1)
 	defer r2.Close()
-	val, err := r2.Get(c.Context(), c.IP()).Result()
-	if err == redis.Nil {
+	a, _ := r2.Exists(c.Context(), c.IP()).Result()
+	if a == 0 {
 		// so new user store it in redis
 		r2.Set(c.Context(), c.IP(), os.Getenv("API_QUOTA"), 30*60*time.Second).Err()
 	} else {
 		// user found with ip in redis
-		// val, _ = r2.Get(c.Context(), c.IP()).Result() // get value of quota, how many api calls left
+		val, _ := r2.Get(c.Context(), c.IP()).Result() // get value of quota, how many api calls left
 		valInt, _ := strconv.Atoi(val)
 		if valInt <= 0 {
 			limit, _ := r2.TTL(r2.Context(), c.IP()).Result()
@@ -81,7 +81,7 @@ func ShortenURL(c *fiber.Ctx) error {
 		body.Expiry = 24
 	}
 
-	err = r.Set(r.Context(), id, body.URL, body.Expiry*3600*time.Second).Err()
+	err := r.Set(r.Context(), id, body.URL, body.Expiry*3600*time.Second).Err()
 	if err != nil {
 		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"error": "Unable to connect to server/database"})
 	}
