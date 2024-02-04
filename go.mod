@@ -16,6 +16,7 @@ require (
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
+	github.com/go-redis/redis v6.15.9+incompatible
 	github.com/go-redis/redis/v8 v8.11.5
 	github.com/gofiber/fiber/v2 v2.52.0
 	github.com/gofiber/fiber/v3 v3.0.0-20240202181040-dbe0443b90a4

@@ -3,7 +3,7 @@ package main
 import (
 	"go-url-short/internal/handlers"
 
-	"github.com/gofiber/fiber"
+	"github.com/gofiber/fiber/v2"
 )
 
 func Routes(app *fiber.App) {
