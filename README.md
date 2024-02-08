@@ -9,13 +9,13 @@ A Golang implementation of URL shortener just like : [bitly](https://bitly.com/)
 
 ## Features included 📋
 
-Rate limiting concept added along with expiry option to maintain service reliability.
+- Rate limiting concept added along with expiry option to maintain service reliability.
 
-Certain checks to ensure correct URL/domain creation.
+- Certain checks to ensure correct URL/domain creation.
 
-Integrated Redis for scalable and persistent data storage.
+- Integrated Redis for scalable and persistent data storage.
 
-Dockerized the whole application using Docker and Docker-compose
+- Dockerized the whole application using Docker and Docker-compose
 
 ## Project Setup 📎
 
